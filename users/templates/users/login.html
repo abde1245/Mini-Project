@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header"><h2>Login</h2></div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                    {% if form.username.errors %}<div class="invalid-feedback d-block">{{ form.username.errors }}</div>{% endif %}
+                    
+                    {{ form.password.label_tag }}
+                    {{ form.password }}
+                    {% if form.password.errors %}<div class="invalid-feedback d-block">{{ form.password.errors }}</div>{% endif %}
+                    
+                    {% if form.non_field_errors %}
+                        {% for error in form.non_field_errors %}
+                            <p class="text-danger small">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary btn-block mt-3">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

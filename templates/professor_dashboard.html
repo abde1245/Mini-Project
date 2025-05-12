@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Professor Dashboard{% endblock %}
+{% block content %}
+<h1>{{ message }}</h1>
+<p>Welcome, Prof. {{ user.last_name|default:user.first_name }}.</p>
+<div class="list-group">
+    <a href="{% url 'duties:professor_duties_list' %}" class="list-group-item list-group-item-action">Manage My Course Duties</a>
+    <a href="{% url 'duties:duty_create' %}" class="list-group-item list-group-item-action">Create New Duty</a>
+    {# Add other professor links: view taught courses, view student submissions (if implemented) #}
+</div>
+{% endblock %}

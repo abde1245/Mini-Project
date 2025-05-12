@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}TA Dashboard{% endblock %}
+{% block content %}
+<h1>{{ message }}</h1>
+<p>Welcome, {{ user.first_name }}.</p>
+ <div class="list-group">
+    <a href="{% url 'duty_tracking:ta_assigned_duties' %}" class="list-group-item list-group-item-action">View My Assigned Duties</a>
+    {# Add other TA links: view submission history (if implemented) #}
+</div>
+{% endblock %}
