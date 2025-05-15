@@ -1,0 +1,15 @@
+{% extends "base.html" %} {% block title %}{{ title }}{% endblock %} {% block content %}
+<h2>{{ title }}</h2>
+<p><strong>Student:</strong> {{ submission.student.get_full_name|default:submission.student.username }}</p>
+<p><strong>Assignment:</strong> {{ submission.assignment.title }}</p>
+{% if submission.submission_file %}
+    <p><strong>Submitted File:</strong> <a href="{{ submission.submission_file.url }}" target="_blank">View File</a></p>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Save Grade</button>
+    <a href="{% url 'student_submissions:submission_detail' pk=submission.pk %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

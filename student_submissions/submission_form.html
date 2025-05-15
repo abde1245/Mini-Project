@@ -1,0 +1,14 @@
+{% extends "base.html" %} {% block title %}{{ title }}{% endblock %} {% block content %}
+<h2>{{ title }}</h2>
+{% if assignment %}
+    <p><strong>Assignment:</strong> {{ assignment.title }}</p>
+    <p><strong>Due Date:</strong> {{ assignment.due_date|date:"Y-m-d H:i" }}</p>
+{% endif %}
+
+<!-- Only render the form fields -->
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}

@@ -5,7 +5,7 @@
 <h1>{{ message }}</h1>
 <p>Welcome, {{ user.first_name }}.</p>
 <div class="list-group">
-    <a href="{% url 'admin:index' %}" class="list-group-item list-group-item-action">Django Admin Site</a>
+    <a href="{% url 'admin:index' %}" class="list-group-item list-group-item-action">Admin Site</a>
     <a href="{% url 'courses:course_list' %}" class="list-group-item list-group-item-action">Manage Courses</a> <!-- LIKELY PROBLEM HERE -->
     <a href="{% url 'ta_assignments:assign_ta_course_list' %}" class="list-group-item list-group-item-action">Manage TA-Course Assignments</a>
     {# Add other admin links: departments, users, reports #}

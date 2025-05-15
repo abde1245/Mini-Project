@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Student Dashboard</h2>
+    <div class="mb-3">
+        <a href="{% url 'student_submissions:my_submissions_list' %}" class="btn btn-primary">My Submissions</a>
+    </div>
+    <div class="mb-3">
+        <a href="{% url 'duty_tracking:ta_assigned_duties' %}" class="btn btn-info">My Assigned Duties</a>
+    </div>
+    {# Add more student-specific links or info here #}
+</div>
+{% endblock %}

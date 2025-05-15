@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %} {# Good practice to load static if you might use it #}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ title }}</h2>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Student:</dt>
+                <dd class="col-sm-9">{{ submission.student.get_full_name|default:submission.student.username }}</dd>
+
+                <dt class="col-sm-3">Assignment:</dt>
+                <dd class="col-sm-9">{{ submission.assignment.title }}</dd>
+
+                <dt class="col-sm-3">Course:</dt>
+                <dd class="col-sm-9">{{ submission.assignment.course.course_code }} - {{ submission.assignment.course.course_name }}</dd>
+
+                <dt class="col-sm-3">Submitted At:</dt>
+                <dd class="col-sm-9">{{ submission.submission_timestamp|date:"Y-m-d H:i A" }}</dd> {# Added A for AM/PM #}
+
+                <dt class="col-sm-3">Submission Type:</dt>
+                <dd class="col-sm-9">{{ submission.get_submission_type_display }}</dd>
+
+                {% if submission.submission_file %}
+                    <dt class="col-sm-3">File:</dt>
+                    <dd class="col-sm-9">
+                        <a href="{{ submission.submission_file.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-download"></i> <!-- Assuming Font Awesome for icon -->
+                            {% comment %}
+                                The complex 'cut' filter chain can be brittle.
+                                A better way is to get just the filename.
+                                submission.submission_file.name is the full path relative to MEDIA_ROOT.
+                                os.path.basename(submission.submission_file.name) would be ideal in Python.
+                                In template, if submission_upload_path ensures good structure, this is okay.
+                                Or, add a model property for display_filename.
+                            {% endcomment %}
+                            {{ submission.submission_file.name|slice:"submissions/"|slice:submission.assignment.id|slice:submission.student.username|slice:"assignment_"|slice:"student_"|slice:"/"|default:"Download File" }}
+                        </a>
+                    </dd>
+                {% else %}
+                    <dt class="col-sm-3">File:</dt>
+                    <dd class="col-sm-9">No file uploaded.</dd>
+                {% endif %}
+            </dl>
+
+            <hr>
+            <h4>Grading Information</h4>
+            {% if submission.graded_by or submission.grade_value %}
+                <dl class="row">
+                    <dt class="col-sm-3">Graded By:</dt>
+                    <dd class="col-sm-9">{{ submission.graded_by.get_full_name|default:submission.graded_by.username|default:"N/A" }}</dd>
+
+                    <dt class="col-sm-3">Grade:</dt>
+                    <dd class="col-sm-9">{{ submission.grade_value|default:"Not yet graded" }}</dd>
+
+                    {% if submission.grading_timestamp %}
+                        <dt class="col-sm-3">Graded At:</dt>
+                        <dd class="col-sm-9">{{ submission.grading_timestamp|date:"Y-m-d H:i A" }}</dd>
+                    {% endif %}
+
+                    <dt class="col-sm-3">Comments:</dt>
+                    <dd class="col-sm-9">
+                        {% if submission.comments %}
+                            <pre style="white-space: pre-wrap; word-wrap: break-word;">{{ submission.comments }}</pre>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </dd>
+                </dl>
+            {% else %}
+                <p class="text-muted">This submission has not been graded yet.</p>
+            {% endif %}
+        </div>
+        <div class="card-footer text-muted">
+            {% comment %}
+            Use the 'can_grade_submission' context variable passed from the view.
+            The view is responsible for determining if the current request.user
+            has the authority to grade THIS specific submission.
+            {% endcomment %}
+            {% if can_grade_submission %}
+                <a href="{% url 'student_submissions:grade_submission' submission_id=submission.pk %}" class="btn btn-success">
+                    <i class="fas fa-edit"></i> <!-- Assuming Font Awesome -->
+                    {% if submission.graded_by %}Edit Grade{% else %}Grade Submission{% endif %}
+                </a>
+            {% endif %}
+
+            {% if request.user == submission.student %}
+                <a href="{% url 'student_submissions:my_submissions_list' %}" class="btn btn-primary">
+                    <i class="fas fa-list"></i> Back to My Submissions
+                </a>
+            {% else %}
+                {# For faculty/TAs, maybe a link back to the assignment's submission list? #}
+                {# Example: <a href="{% url 'duties:assignment_submissions' assignment_id=submission.assignment.pk %}" class="btn btn-primary">Back to Assignment Submissions</a> #}
+                {# For now, a generic back or dashboard link could be used if the above isn't set up #}
+                <a href="{% url 'users:dashboard_dispatch' %}" class="btn btn-secondary">
+                    <i class="fas fa-tachometer-alt"></i> Back to Dashboard
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

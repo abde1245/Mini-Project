@@ -18,7 +18,9 @@ def assign_ta_to_course_view(request):
         form = TACourseAssignmentForm(request.POST)
         if form.is_valid():
             assignment = form.save(commit=False)
-            assignment.assigned_by_user = request.user
+            # Auto-set assigned_by to current admin user
+            assignment.assigned_by = request.user
+            assignment.save()
             try:
                 assignment.save()
                 messages.success(request, 'TA successfully assigned to course.')

@@ -18,7 +18,7 @@ class Assignment(models.Model): # This represents a TA Duty/Task
         null=True,
         blank=True,
         related_name='assigned_duties', # From TA's perspective: user.assigned_duties.all()
-        limit_choices_to={'role__name__in': ['Student', 'TA']} # Assuming TAs have role 'Student' or 'TA'
+        limit_choices_to={'role__name': 'TA'} # Assuming TAs have role 'Student' or 'TA'
     )
 
     # Who created the duty (a Faculty member)

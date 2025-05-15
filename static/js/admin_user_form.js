@@ -1,31 +1,49 @@
-var $ = django.jQuery || window.jQuery;
+// static/js/admin_user_form.js
+document.addEventListener('DOMContentLoaded', function() {
+    var roleSelect = document.getElementById('id_role'); // Adjust ID if necessary
 
-$(document).ready(function() {
-    var roleField = $('#id_role');
-    
-    // Select the fieldset elements directly using their classes
-    var studentFields = $('fieldset.student-fields-class'); 
-    var facultyFields = $('fieldset.faculty-fields-class');
+    if (roleSelect) {
+        var studentFields = document.querySelectorAll('.student-fields-class'); // Use the class names from admin.py
+        var facultyFields = document.querySelectorAll('.faculty-fields-class'); // Use the class names from admin.py
 
-    // Check if elements are found (for debugging)
-    // console.log("Role field:", roleField.length > 0);
-    // console.log("Student fields found:", studentFields.length > 0);
-    // console.log("Faculty fields found:", facultyFields.length > 0);
+        function toggleRoleFields() {
+            var selectedRoleId = roleSelect.value;
+            // Get the selected role name based on the option text or data attribute
+            var selectedRoleName = roleSelect.options[roleSelect.selectedIndex].text;
+            console.log("Selected Role Name:", selectedRoleName); // Debugging
 
-    function toggleRoleSpecificFields() {
-        var selectedRoleText = roleField.find('option:selected').text().trim().toLowerCase();
-        // console.log("Selected Role Text:", selectedRoleText);
+            // Show/hide based on role name (more readable)
+            if (selectedRoleName === 'Student') {
+                studentFields.forEach(function(fieldset) { fieldset.style.display = 'block'; });
+                facultyFields.forEach(function(fieldset) { fieldset.style.display = 'none'; });
+            } else if (selectedRoleName === 'Faculty') {
+                studentFields.forEach(function(fieldset) { fieldset.style.display = 'none'; });
+                facultyFields.forEach(function(fieldset) { fieldset.style.display = 'block'; });
+            } else { // Admin or other roles
+                studentFields.forEach(function(fieldset) { fieldset.style.display = 'none'; });
+                facultyFields.forEach(function(fieldset) { fieldset.style.display = 'none'; });
+            }
 
-        studentFields.hide();
-        facultyFields.hide();
-
-        if (selectedRoleText === 'student') {
-            studentFields.show();
-        } else if (selectedRoleText === 'faculty') {
-            facultyFields.show();
+            // Optional: Clear values when hiding fields to prevent saving unwanted data
+            // This is less necessary with the form.save override clearing data, but can be a safety measure.
+            if (selectedRoleName !== 'Student') {
+                studentFields.forEach(function(fieldset) {
+                    fieldset.querySelectorAll('input, select, textarea').forEach(function(input) { input.value = ''; });
+                });
+            }
+            if (selectedRoleName !== 'Faculty') {
+                facultyFields.forEach(function(fieldset) {
+                    fieldset.querySelectorAll('input, select, textarea').forEach(function(input) { input.value = ''; });
+                });
+            }
         }
-    }
 
-    roleField.on('change', toggleRoleSpecificFields);
-    toggleRoleSpecificFields(); // Initial call
+        // Initial state on page load
+        toggleRoleFields();
+
+        // Bind event listener to role change
+        roleSelect.addEventListener('change', toggleRoleFields);
+    } else {
+        console.warn("Role select element not found on this page.");
+    }
 });

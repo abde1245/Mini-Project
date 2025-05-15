@@ -40,30 +40,21 @@ def ta_assigned_duties_view(request):
 
 @student_required
 def mark_duty_complete_view(request, assignment_pk):
-    # Ensure TA can only mark duties assigned to them
-    assignment = get_object_or_404(Assignment, pk=assignment_pk, assigned_to_ta_user=request.user)
-    
-    # Check if already marked (to prevent duplicate logs if unique_together is not strict enough or for UX)
-    existing_log = DutyCompletionLog.objects.filter(assignment=assignment, ta_user=request.user).first()
-    
-    if existing_log:
-        messages.info(request, f"Duty '{assignment.title}' was already marked as {existing_log.status}.")
-        # Optionally, allow editing the log here by pre-filling the form with 'instance=existing_log'
-        # For now, just redirect.
-        return redirect('duty_tracking:ta_assigned_duties')
-
+    assignment = get_object_or_404(Assignment, pk=assignment_pk, assigned_to=request.user)
     if request.method == 'POST':
         form = MarkDutyCompleteForm(request.POST)
         if form.is_valid():
             log = form.save(commit=False)
-            log.assignment = assignment
-            log.ta_user = request.user
-            # log.completion_timestamp is auto_now_add in model
+            log.duty = assignment
+            log.fulfilled_by = request.user
+            log.updated_by = request.user
             log.save()
+            if log.status == DutyCompletionLog.StatusChoices.COMPLETED:
+                assignment.is_completed = True
+                assignment.save(update_fields=['is_completed'])
             messages.success(request, f"Duty '{assignment.title}' successfully marked as {log.status}.")
-            # Consider sending a notification to the professor
             return redirect('duty_tracking:ta_assigned_duties')
     else:
-        form = MarkDutyCompleteForm(initial={'status': 'Completed'}) # Pre-select 'Completed'
+        form = MarkDutyCompleteForm(initial={'status': 'Completed'})
         
     return render(request, 'duty_tracking/mark_complete.html', {'form': form, 'assignment': assignment})

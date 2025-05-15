@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %} {# Make sure static is loaded if you use custom JS/CSS specific to this form #}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ title }}</h2>
+
+    <form method="post" novalidate> {# novalidate prevents browser validation, relying on Django's #}
+        {% csrf_token %}
+
+        {# Render form fields manually for better Bootstrap styling #}
+        {% for field in form %}
+            <div class="form-group mb-3"> {# Use mb-3 for Bootstrap 4 spacing #}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                
+                {# Add 'is-invalid' class if field has errors #}
+                {{ field|add_class:"form-control" }}
+                {% if field.field.widget.input_type == 'select' %}
+                    {# For select dropdowns, ensure form-control is applied #}
+                     {# The add_class filter might not work directly on some widgets #}
+                     {# Ensure the widget attrs={'class': 'form-control'} is set in the form definition #}
+                {% endif %}
+
+                {# Display field-specific errors #}
+                {% if field.errors %}
+                    <div class="invalid-feedback d-block"> {# Use d-block to show errors #}
+                        {% for error in field.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {# Display help text if any #}
+                {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        {# Display non-field errors (e.g., from form.clean()) #}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p class="mb-0">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-success">Save Duty</button>
+        <a href="{% url 'duties:professor_duties_list' %}" class="btn btn-secondary ml-2">Cancel</a> {# Use ml-2 for BS4 spacing #}
+    </form>
+
+    {# Optional: Add JavaScript for dynamic TA filtering based on course selection #}
+    {# This would require more setup (an endpoint to fetch TAs or passing data) #}
+
+</div>
+
+{% comment %} Add custom JS if needed for widgets like datetime-local polyfills or dynamic filtering {% endcomment %}
+{% block extra_js %}
+{# <script src="{% static 'js/duty_form_enhancements.js' %}"></script> #}
+{% endblock %}
+
+{% comment %} Helper filter to add CSS class to form fields (put this in a templatetags file later) {% endcomment %}
+{% comment %} Or define the widget attributes directly in forms.py which is generally preferred {% endcomment %}
+{% comment %} {% load widget_tweaks %} {# Example using widget_tweaks library #}
+{% comment %} {% for field in form %}
+    <div class="form-group">
+        {{ field.label_tag }}
+        {% render_field field class+="form-control" %}
+        ... errors/help text ...
+    </div>
+{% endfor %} {% endcomment %}
+
+{% endblock %}
+
+{# Simple Add Class Filter (Alternatively add widget attrs in forms.py) #}
+{% comment %} You would need to define this filter if you want to use it.
+    Example (in a templatetags file, e.g., duties/templatetags/form_tags.py):
+    from django import template
+    register = template.Library()
+    @register.filter(name='add_class')
+    def add_class(field, css_class):
+        return field.as_widget(attrs={"class": css_class})
+{% endcomment %}

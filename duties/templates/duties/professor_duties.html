@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Professor Duties{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Assigned Duties</h2>
+
+    {# Messages are already handled in base.html, no need to repeat unless you want them specifically in the content block #}
+
+    <div class="mb-3">
+        <a href="{% url 'duties:duty_create' %}" class="btn btn-primary">Create New Duty</a>
+    </div>
+
+    {% if duties %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Course</th>
+                        <th>Assigned TA</th>
+                        <th>Due Date</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for duty in duties %}
+                    <tr>
+                        <td>{{ duty.title }}</td>
+                        <td>{{ duty.course.course_code }} - {{ duty.course.course_name }}</td>
+                        <td>
+                            {% if duty.assigned_to %}
+                                {# Corrected: Use role.name based on your model #}
+                                {{ duty.assigned_to.first_name|default:'' }} {{ duty.assigned_to.last_name|default:'' }} ({{ duty.assigned_to.username }})
+                            {% else %}
+                                <span class="text-muted">Not Assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ duty.due_date|date:"Y-m-d H:i" }}</td> {# Format the date/time #}
+                        <td>{{ duty.location|default:"N/A" }}</td> {# Handle optional location #}
+                        <td>
+                            {% if duty.is_completed %}
+                                <span class="badge badge-success">Completed</span> {# Use badge-success for BS4 #}
+                            {% else %}
+                                <span class="badge badge-warning">Pending</span> {# Use badge-warning for BS4 #}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'duties:duty_update' duty.pk %}" class="btn btn-sm btn-outline-secondary mr-1">Edit</a> {# Use mr-1 for BS4 spacing #}
+                            {# Add delete button - use a form for safety #}
+                            <form action="{% url 'duties:duty_delete' duty.pk %}" method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this duty?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            You have not created or been assigned any duties for your courses yet.
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
