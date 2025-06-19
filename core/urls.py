@@ -4,6 +4,8 @@ from django.shortcuts import redirect
 from django.conf import settings # For MEDIA_URL in DEBUG mode
 from django.conf.urls.static import static # For MEDIA_URL in DEBUG mode
 
+admin.site.site_header = "Dashboard"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('users.urls', namespace='users')), # Login, logout, dashboard dispatch

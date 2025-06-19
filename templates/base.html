@@ -13,7 +13,7 @@
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav ml-auto">
                     {% if user.is_authenticated %}
-                        <li class="nav-item"><span class="navbar-text text-light mr-3">Hi, {{ user.username }} ({{user.role.role_name}})</span></li>
+                        <li class="nav-item"><span class="navbar-text text-light mr-3">Hi, {{ user.username }} {% if user.role %}({{ user.role.name }}){% endif %}</span></li>
                         <li class="nav-item"><a class="btn btn-outline-light btn-sm" href="{% url 'users:logout' %}">Logout</a></li>
                     {% else %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'users:login' %}">Login</a></li>

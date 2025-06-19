@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django import forms
 from .models import Submission
 from courses.models import Course, Enrollment
 from ta_assignments.models import TACourseAssignment
@@ -41,7 +43,7 @@ class RelevantStudentFilter(admin.SimpleListFilter):
                 submissions_made__assignment__course__in=ta_courses
             ).distinct()
         elif hasattr(user, 'role') and user.role and user.role.name == 'Student':
-            students = CustomUser.objects.filter(pk=user.pk)
+            students = CustomUser.objects.filter(pk=user.pk) # hide this fil
         else:  # Admin
             students = CustomUser.objects.all()
         return [(s.username, s.get_full_name() or s.username) for s in students]
@@ -75,8 +77,23 @@ class RelevantCourseFilter(admin.SimpleListFilter):
             return queryset.filter(assignment__course__course_code=self.value())
         return queryset
 
+class SubmissionAdminForm(forms.ModelForm):
+    class Meta:
+        model = Submission
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        assignment = cleaned_data.get('assignment')
+        submission_timestamp = cleaned_data.get('submission_timestamp') or timezone.now()
+        if assignment and assignment.due_date and submission_timestamp:
+            if submission_timestamp > assignment.due_date:
+                raise ValidationError("Cannot submit after the assignment due date.")
+        return cleaned_data
+
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
+    form = SubmissionAdminForm
     list_display = (
         'assignment',
         'student',

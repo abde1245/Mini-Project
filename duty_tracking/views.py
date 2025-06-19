@@ -8,7 +8,7 @@ from .forms import MarkDutyCompleteForm
 from django.utils import timezone
 from django.db.models import Exists, OuterRef
 
-@student_required
+#@student_required
 def ta_assigned_duties_view(request):
     ta_user = request.user
 
@@ -38,7 +38,7 @@ def ta_assigned_duties_view(request):
     }
     return render(request, 'duty_tracking/ta_assigned_duties.html', context)
 
-@student_required
+#@student_required
 def mark_duty_complete_view(request, assignment_pk):
     assignment = get_object_or_404(Assignment, pk=assignment_pk, assigned_to=request.user)
     if request.method == 'POST':
@@ -49,12 +49,17 @@ def mark_duty_complete_view(request, assignment_pk):
             log.fulfilled_by = request.user
             log.updated_by = request.user
             log.save()
+            print("log.status:", log.status, "COMPLETED:", DutyCompletionLog.StatusChoices.COMPLETED)  # Debug
             if log.status == DutyCompletionLog.StatusChoices.COMPLETED:
                 assignment.is_completed = True
+                assignment.save(update_fields=['is_completed'])
+            else:
+                assignment.is_completed = False
                 assignment.save(update_fields=['is_completed'])
             messages.success(request, f"Duty '{assignment.title}' successfully marked as {log.status}.")
             return redirect('duty_tracking:ta_assigned_duties')
     else:
-        form = MarkDutyCompleteForm(initial={'status': 'Completed'})
+        # Use the internal value for initial status
+        form = MarkDutyCompleteForm(initial={'status': DutyCompletionLog.StatusChoices.COMPLETED})
         
     return render(request, 'duty_tracking/mark_complete.html', {'form': form, 'assignment': assignment})

@@ -79,7 +79,7 @@ def ta_dashboard_view(request):
     # from duties.models import Assignment # Import Assignment model
     # assigned_duties = Assignment.objects.filter(assigned_to_ta_user=request.user)
     context = {
-        'message': "TA Dashboard",
+        'message': "TA/Student Dashboard",
         # 'assigned_duties': assigned_duties,
     }
     return render(request, 'ta_dashboard.html', context)
@@ -95,7 +95,7 @@ def ta_dashboard_view(request):
 @student_required
 def student_dashboard_view(request):
     context = {
-        'message': "Student Dashboard",
+        'message': "Student Dashboard",  # Update the message
         # 'assigned_duties': assigned_duties,
     }
     return render(request, 'student_dashboard.html', context)

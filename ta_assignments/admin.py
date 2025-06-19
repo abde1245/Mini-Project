@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import TACourseAssignment, TAFacultyAssignment
+from django import forms
+from django.utils import timezone
+from .models import TACourseAssignment, TAFacultyAssignment, Course
 from users.models import CustomUser # For type hinting or direct use if needed
 
 class RelevantFacultyFilter(admin.SimpleListFilter):
@@ -43,14 +45,26 @@ class RelevantTAFilter(admin.SimpleListFilter):
             return queryset.filter(ta__pk=self.value())
         return queryset
 
+class TACourseAssignmentAdminForm(forms.ModelForm):
+    class Meta:
+        model = TACourseAssignment
+        fields = '__all__'
+
+    class Media:
+        js = ('js/ta_course_filter.js',)  # Your JS file
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['course'].queryset = Course.objects.all()  # Show all, filter in JS
+
 @admin.register(TACourseAssignment)
 class TACourseAssignmentAdmin(admin.ModelAdmin):
+    form = TACourseAssignmentAdminForm
     list_display = ('get_ta_display', 'get_course_display', 'get_assigned_by_display', 'start_date', 'end_date')
-    list_filter = ('course__course_code', 'ta__username', 'start_date', 'assigned_by__username')
+    # Remove 'ta__username' from list_filter
+    list_filter = ('course__course_code', 'start_date', 'assigned_by__username')
     search_fields = ('ta__username', 'ta__first_name', 'ta__last_name', 'course__course_name', 'course__course_code')
-    
-    # Use autocomplete fields for better UX with potentially many users/courses
-    autocomplete_fields = ['ta', 'course', 'assigned_by']
+    autocomplete_fields = ['ta', 'assigned_by']
 
     fieldsets = (
         (None, {
@@ -61,6 +75,9 @@ class TACourseAssignmentAdmin(admin.ModelAdmin):
             'classes': ('collapse',), # Keep it less prominent if auto-set
         }),
     )
+
+    class Media:
+        js = ('js/auto_submit_on_ta_change.js',)
 
     def get_ta_display(self, obj):
         return str(obj.ta)
@@ -97,12 +114,63 @@ class TACourseAssignmentAdmin(admin.ModelAdmin):
             return qs
         if hasattr(user, 'role') and user.role and user.role.name == 'Faculty':
             # Only show TA course assignments for this faculty's courses
-            from courses.models import Course
             courses = Course.objects.filter(taught_by=user)
             return qs.filter(course__in=courses)
         if hasattr(user, 'role') and user.role and user.role.name == 'TA':
             return qs.filter(ta=user)
         return qs.none()
+
+    def changelist_view(self, request, extra_context=None):
+        # Instead, just pass the page through:
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        from .models import TAFacultyAssignment, Course
+        from users.models import CustomUser
+        import json
+
+        ta_courses = {}
+        today = timezone.now().date()
+        for ta in CustomUser.objects.filter(role__name='TA'):
+            # Get all active faculty assignments for this TA
+            active_faculty_assignments = TAFacultyAssignment.objects.filter(
+                ta=ta,
+                end_date__gte=today
+            )
+            faculties = active_faculty_assignments.values_list('faculty', flat=True)
+            # Get all courses taught by these faculties
+            courses = Course.objects.filter(taught_by__in=faculties)
+            ta_courses[ta.pk] = list(courses.values_list('pk', flat=True))
+        form.base_fields['course'].widget.attrs['data-ta-courses'] = json.dumps(ta_courses)
+        return form
+
+    def get_list_filter(self, request):
+        user = request.user
+        # Admin: show all courses
+        if user.is_superuser or (hasattr(user, 'role') and user.role and user.role.name == 'Admin'):
+            return ('course__course_code', 'start_date', 'assigned_by__username')
+        # Faculty: show only relevant courses
+        elif hasattr(user, 'role') and user.role and user.role.name == 'Faculty':
+            class RelevantCourseFilter(admin.SimpleListFilter):
+                title = 'Course'
+                parameter_name = 'course'
+
+                def lookups(self, request, model_admin):
+                    courses = Course.objects.filter(taught_by=request.user)
+                    return [(c.course_code, f"{c.course_code} - {c.course_name}") for c in courses]
+
+                def queryset(self, request, queryset):
+                    if self.value():
+                        return queryset.filter(course__course_code=self.value())
+                    return queryset
+
+            return (RelevantCourseFilter, 'start_date', 'assigned_by__username')
+        # TA: no filters
+        elif hasattr(user, 'role') and user.role and user.role.name == 'TA':
+            return ()
+        # Default: show nothing
+        return ()
 
 @admin.register(TAFacultyAssignment)
 class TAFacultyAssignmentAdmin(admin.ModelAdmin):

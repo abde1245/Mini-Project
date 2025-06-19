@@ -3,68 +3,134 @@
 from django.contrib import admin
 from django import forms
 from .models import DutyCompletionLog
+from users.models import CustomUser
+from ta_assignments.models import TAFacultyAssignment
+from django.utils import timezone
+
+class FulfilledByTAFilter(admin.SimpleListFilter):
+    title = 'Fulfilled By (TA)'
+    parameter_name = 'fulfilled_by'
+
+    def lookups(self, request, model_admin):
+        user = request.user
+        # Admin: all TAs
+        if user.is_superuser or (hasattr(user, 'role') and user.role and user.role.name == 'Admin'):
+            tas = CustomUser.objects.filter(role__name='TA')
+        # Faculty: only TAs assigned to them
+        elif hasattr(user, 'role') and user.role and user.role.name == 'Faculty':
+            ta_ids = TAFacultyAssignment.objects.filter(faculty=user).values_list('ta', flat=True)
+            tas = CustomUser.objects.filter(pk__in=ta_ids)
+        else:
+            tas = CustomUser.objects.none()
+        return [(ta.pk, ta.get_full_name() or ta.username) for ta in tas]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(fulfilled_by__pk=self.value())
+        return queryset
 
 @admin.register(DutyCompletionLog)
 class DutyCompletionLogAdmin(admin.ModelAdmin):
     list_display = (
-        'duty_title',
-        'status_display',
-        'fulfilled_by_username',
-        'updated_by_username',
-        'completion_timestamp',
-        'short_comments'
+        'duty', 'status', 'fulfilled_by_username', 'updated_by', 'completion_timestamp', 'comments'
     )
-    list_filter = ('completion_timestamp', 'fulfilled_by', 'status')
     search_fields = ('duty__title', 'fulfilled_by__username', 'comments')
+    list_filter = ('completion_timestamp', 'status')  # Default, will override below
+
+    def get_readonly_fields(self, request, obj=None):
+        # Make 'duty' field read-only when editing an existing entry
+        if obj:  # This means the object already exists (editing)
+            return ['duty'] + list(super().get_readonly_fields(request, obj))
+        return super().get_readonly_fields(request, obj)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        # Hide fulfilled_by for TAs (self-implied)
-        if hasattr(request.user, 'role') and request.user.role and request.user.role.name == 'TA':
-            if 'fulfilled_by' in form.base_fields:
-                form.base_fields['fulfilled_by'].widget = forms.HiddenInput()
-        # Make fulfilled_by readonly for faculty/admin
-        elif hasattr(request.user, 'role') and request.user.role and request.user.role.name in ['Faculty', 'Admin']:
-            if 'fulfilled_by' in form.base_fields:
-                form.base_fields['fulfilled_by'].disabled = True
-        # Hide updated_by for everyone (self-implied)
-        if 'updated_by' in form.base_fields:
-            form.base_fields['updated_by'].widget = forms.HiddenInput()
-        # Hide completion_timestamp for everyone (auto)
-        if 'completion_timestamp' in form.base_fields:
-            form.base_fields['completion_timestamp'].widget = forms.HiddenInput()
+        user = request.user
+
+        # Hide fields for TA and Faculty
+        if hasattr(user, 'role') and user.role:
+            role = user.role.name
+            if role == 'TA':
+                from duties.models import Assignment
+                from .models import DutyCompletionLog
+                if not obj:  # Only filter duties when creating a new entry
+                    completed_duties = DutyCompletionLog.objects.filter(
+                        fulfilled_by=user, status='COMPLETED'
+                    ).values_list('duty_id', flat=True)
+                    form.base_fields['duty'].queryset = Assignment.objects.filter(
+                        assigned_to=user,
+                        is_completed=False
+                    ).exclude(pk__in=completed_duties)
+                # Hide fulfilled_by and updated_by fields
+                form.base_fields.pop('fulfilled_by', None)
+                form.base_fields.pop('updated_by', None)
+            elif role == 'Faculty':
+                from duties.models import Assignment
+                from courses.models import Course
+                courses = Course.objects.filter(taught_by=user)
+                form.base_fields['duty'].queryset = Assignment.objects.filter(course__in=courses)
+                ta_ids = TAFacultyAssignment.objects.filter(faculty=user).values_list('ta', flat=True)
+                form.base_fields['fulfilled_by'].queryset = CustomUser.objects.filter(pk__in=ta_ids)
+                form.base_fields.pop('updated_by', None)
         return form
 
     def save_model(self, request, obj, form, change):
-        # Set fulfilled_by for TAs only on add
-        if not change and hasattr(request.user, 'role') and request.user.role and request.user.role.name == 'TA':
-            obj.fulfilled_by = request.user
-        # Always set updated_by to the user making the change
-        obj.updated_by = request.user
+        user = request.user
+        if hasattr(user, 'role') and user.role:
+            role = user.role.name
+            if role == 'TA':
+                obj.fulfilled_by = user
+                obj.updated_by = user
+            elif role == 'Faculty':
+                obj.updated_by = user
+
+        # Update the `is_completed` field in the related `Assignment` model
+        if obj.status == 'COMPLETED':
+            obj.duty.is_completed = True
+            obj.duty.save(update_fields=['is_completed'])
+        else:
+            obj.duty.is_completed = False
+            obj.duty.save(update_fields=['is_completed'])
+
         super().save_model(request, obj, form, change)
 
-    def status_display(self, obj):
-        return obj.get_status_display()
-    status_display.short_description = 'Status'
-    status_display.admin_order_field = 'status'
+    def get_queryset(self, request):
+        """
+        Filter the queryset based on the logged-in user's role.
+        """
+        qs = super().get_queryset(request)
+        user = request.user
+
+        if hasattr(user, 'role') and user.role:
+            role = user.role.name
+            if role == 'TA':
+                # Show only entries fulfilled by the logged-in TA
+                return qs.filter(fulfilled_by=user)
+            elif role == 'Faculty':
+                # Show only entries for TAs assigned to this faculty
+                ta_ids = TAFacultyAssignment.objects.filter(faculty=user).values_list('ta', flat=True)
+                return qs.filter(fulfilled_by__pk__in=ta_ids)
+            elif role == 'Admin':
+                # Admin sees all entries
+                return qs
+        # Default: return no entries if the role is not recognized
+        return qs.none()
 
     def fulfilled_by_username(self, obj):
-        return obj.fulfilled_by.username
-    fulfilled_by_username.short_description = 'Fulfilled By'
-    fulfilled_by_username.admin_order_field = 'fulfilled_by__username'
+        # Returns the full name or username of the TA who fulfilled the duty
+        if obj.fulfilled_by:
+            return obj.fulfilled_by.get_full_name() or obj.fulfilled_by.username
+        return "-"
+    fulfilled_by_username.short_description = 'Fulfilled By (TA)'
 
-    def updated_by_username(self, obj):
-        return obj.updated_by.username
-    updated_by_username.short_description = 'Updated By'
-    updated_by_username.admin_order_field = 'updated_by__username'
-
-    def duty_title(self, obj):
-        return obj.duty.title
-    duty_title.short_description = 'Duty Title'
-    duty_title.admin_order_field = 'duty__title'
-
-    def short_comments(self, obj):
-        if obj.comments:
-            return (obj.comments[:75] + '...') if len(obj.comments) > 75 else obj.comments
-        return None
-    short_comments.short_description = 'Comments'
+    def delete_model(self, request, obj):
+        """
+        Override delete_model to update the is_completed field of the related Assignment.
+        Only set is_completed=False if no other log for this assignment is marked as COMPLETED.
+        """
+        assignment = obj.duty
+        super().delete_model(request, obj)
+        # After deleting, check if any other logs for this assignment are still marked as COMPLETED
+        if assignment and not assignment.completion_logs.filter(status='COMPLETED').exists():
+            assignment.is_completed = False
+            assignment.save(update_fields=['is_completed'])

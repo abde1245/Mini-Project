@@ -32,6 +32,11 @@ def create_submission(request, assignment_id):
     assignment = get_object_or_404(Assignment, pk=assignment_id)
     user = request.user # This user is the student
 
+    # Disallow submission after due date
+    if timezone.now() > assignment.due_date:
+        messages.error(request, "The submission deadline for this assignment has passed.")
+        return redirect('student_submissions:my_submissions_list')
+
     # More robust check: ensure student is enrolled in the assignment's course
     # Example (requires Enrollment model and logic):
     # from courses.models import Enrollment

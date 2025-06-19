@@ -1,0 +1,8 @@
+<h2>Alerts</h2>
+<ul>
+    {% for alert in alerts %}
+        <li>{{ alert }}</li>
+    {% empty %}
+        <li>No alerts at this time.</li>
+    {% endfor %}
+</ul>

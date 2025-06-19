@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Reports</h1>
+<ul>
+    <li><a href="{% url 'admin:overall-duty-summary' %}">Overall Duty Summary</a></li>
+    <li><a href="{% url 'admin:user-activity-logs' %}">User Activity Logs</a></li>
+    <li><a href="{% url 'admin:ta-performance-overview' %}">TA Performance Overview</a></li>
+    <li><a href="{% url 'admin:professor-ta-performance' %}">TA Performance Report (Individual TA)</a></li>
+    <li><a href="{% url 'admin:professor-schedule-summary' %}">Schedule Summary Report</a></li>
+    <li><a href="{% url 'admin:professor-duty-completion-rate' %}">Duty Completion Rate Report</a></li>
+</ul>
+{% endblock %}
