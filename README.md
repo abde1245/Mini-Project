@@ -5,17 +5,17 @@
 ---
 
 ## 📌 Table of Contents
-
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
-- [System Roles & Permissions](#system-roles--permissions)
+- [System Roles and Permissions](#system-roles-and-permissions)
 - [System Architecture](#system-architecture)
 - [Screenshots](#screenshots)
 - [Setup Instructions](#setup-instructions)
 - [Future Enhancements](#future-enhancements)
 - [Contributors](#contributors)
 - [License](#license)
+
 
 ---
 
