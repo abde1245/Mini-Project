@@ -19,7 +19,7 @@
 
 ---
 
-## 🧠 Overview
+## Overview
 
 Managing TA duties manually? Say goodbye to Excel chaos and hello to centralized control.
 
@@ -27,7 +27,7 @@ The **TA Duty Maintenance System** is a role-based academic workflow management 
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 | Category                 | Features                                                                 |
 |--------------------------|--------------------------------------------------------------------------|
@@ -43,7 +43,7 @@ The **TA Duty Maintenance System** is a role-based academic workflow management 
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 | Layer        | Technology           |
 |--------------|----------------------|
@@ -55,7 +55,7 @@ The **TA Duty Maintenance System** is a role-based academic workflow management 
 
 ---
 
-## 🔐 System Roles & Permissions
+## System Roles & Permissions
 
 | Feature                      | Admin | Professor | TA | Student |
 |------------------------------|:-----:|:---------:|:--:|:-------:|
@@ -69,7 +69,7 @@ The **TA Duty Maintenance System** is a role-based academic workflow management 
 
 ---
 
-## 🧩 System Architecture
+## System Architecture
 
 - **Architecture Pattern**: Django MVT (Model-View-Template)
 - **Database Design**: Normalized using ERD with entities like Users, Roles, TA Assignments, Courses, Submissions, etc.
@@ -80,7 +80,7 @@ The **TA Duty Maintenance System** is a role-based academic workflow management 
 
 ---
 
-## 📸 Screenshots (from Appendix A of the Report)
+## Screenshots (from Appendix A of the Report)
 
 > *(You can embed actual screenshots here in Markdown if uploading to GitHub Pages or similar)*
 
@@ -92,7 +92,7 @@ The **TA Duty Maintenance System** is a role-based academic workflow management 
 
 ---
 
-## ⚙️ Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
 
