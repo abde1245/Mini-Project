@@ -8,13 +8,9 @@
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
-- [System Roles and Permissions](#system-roles-and-permissions)
+- [System Roles and Permissions](#system-roles-&-permissions)
 - [System Architecture](#system-architecture)
-- [Screenshots](#screenshots)
 - [Setup Instructions](#setup-instructions)
-- [Future Enhancements](#future-enhancements)
-- [Contributors](#contributors)
-- [License](#license)
 
 
 ---
